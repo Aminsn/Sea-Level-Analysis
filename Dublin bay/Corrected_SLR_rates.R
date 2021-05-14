@@ -7,10 +7,10 @@ library(readr)
 library(reshape2)
 
 dublin_port <- read_csv('IrishSeaComplete.csv') 
-arklow <- read.delim("Dublin_Bay_Project-master/arklow.txt", stringsAsFactors=FALSE)
-port_oriel <- read.delim("Dublin_Bay_Project-master/port_oriel.txt", stringsAsFactors=FALSE)
-howth_harbour <- read_csv("Dublin_Bay_Project-master/howth_harbour.csv")
-dly532 <- read_csv("Dublin_Bay_Project-master/dly532.csv") #Atmospher data from Dublin Airport
+arklow <- read.delim("arklow.txt", stringsAsFactors=FALSE)
+port_oriel <- read.delim("port_oriel.txt", stringsAsFactors=FALSE)
+howth_harbour <- read_csv("howth_harbour.csv")
+dly532 <- read_csv("dly532.csv") #Atmospher data from Dublin Airport
 
 #Doodson's filter function:
 fDoodson <- function(x) {
