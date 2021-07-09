@@ -40,28 +40,73 @@ p0_data <- p0_data %>% select(Year, p0) %>% rename(year = Year) %>% filter(year 
 
 # ================ Mapping Dublin, Arklow and Howth Locations =================== 
 
-locs <-  data.frame( lon_dec = c(-6.138,-6.216, -6.071), # Dublin, Arklow & Harbour coordinates
-                     lat_dec = c(52.795,53.344, 53.391))
+base = get_stamenmap(c(-11, 45, 10, 60), zoom=6, maptype="terrain-background")
+(map1 <- ggmap(base))
 
 
-base = get_stamenmap(c(-6.397, 52.75, -5.894, 53.426), zoom=10, maptype="terrain-background")
-map1 <- ggmap(base)
+locs <-  data.frame( lon_dec = c(-6.138,-6.216, -6.071, -5.54, -4.49), # Dublin, Arklow & Harbour coordinates
+                     lat_dec = c(52.795,53.344, 53.391, 50.1, 48.37))
 
-map1 + geom_point(data=locs, aes(x=lon_dec, y=lat_dec), shape= "circle" ,color="#A01502", cex=4) + # plot the points
-  labs(x="Longitude", y="Latitude") + # label the axes
-  annotate(geom = "text",x=-6.08,
-           y=52.798,label="Arklow", fontface="bold",size = 3,color = "#A01502") +
+locs2 <-  data.frame( lon_dec = c(-6.138,-6.216, -6.071), # Dublin, Arklow & Harbour coordinates
+                      lat_dec = c(52.795,53.344, 53.391))
+
+bigger_map <- map1 +
+  geom_point(data=locs, aes(x=lon_dec, y=lat_dec), shape= "square" ,color="#A01502", cex=4)  +
+  labs(x="Longitude", y="Latitude") +
+  annotate(geom = "text", x = 3, y = 57, label = "North Sea", 
+           color = "grey22", size = 4) +
+  annotate(geom = "text", x = -9, y = 49, label = "Celtic Sea", 
+           color = "grey22", size = 4) +
+  annotate(geom = "text", x = -5.54, y = 49.575, label = "Newlyn", 
+           , fontface="bold",family= "Serif",size = 4,color = "#A01502") +
+  annotate(geom = "text", x = -4.49, y = 47.845, label = "Brest", 
+           fontface="bold",family= "Serif",size = 4,color = "#A01502") +
+  geom_rect(xmin = -6.5, ymin = 52.5, xmax = -5.6, ymax = 53.6, fill = NA,  colour = "black",
+            size = 0.6) + 
+  theme(legend.position="bottom", axis.text = element_text(size = rel(0.75)), 
+        legend.key = element_rect(colour = "white"), 
+        axis.text.x = element_text( vjust=0.5, size = 10, family = "Serif"),
+        axis.text.y = element_text( size = 10, family = "Serif"),
+        axis.title.x = element_text(family = "Serif"),
+        axis.title.y = element_text(family = "Serif"))
+
+
+base2 = get_stamenmap(c(-6.397, 52.75, -5.894, 53.426), zoom=10, maptype="terrain-background")
+(map2 <- ggmap(base2))
+
+smaller_map <- map2 + geom_point(data=locs2, aes(x=lon_dec, y=lat_dec), shape= "square" ,color="#A01502", cex=4) + # plot the points
+  labs(x="", y="") + # label the axes
+  annotate(geom = "text",x=-6.138,
+           y=52.771,label="Arklow", fontface="bold",family= "Serif",size = 4,color = "#A01502") +
   annotate(geom = "text",x=-6.2,
-           y=53.319,label="Dublin Port", fontface="bold", size = 3,color = "#A01502") +
+           y=53.32,label="Dublin Port", fontface="bold", family= "Serif", size = 4,color = "#A01502") +
   annotate(geom = "text",x=-6.05,
-           y=53.37,label="Howth Harbour", fontface="bold",size = 3,color = "#A01502") +
+           y=53.37,label="Howth Harbour", fontface="bold",family= "Serif", size = 4,color = "#A01502") +
   theme_bw() + 
   theme(legend.position="bottom", axis.text = element_text(size = rel(0.75)), 
         legend.key = element_rect(colour = "white"), 
-        axis.text.x = element_text(angle=45, vjust=0.5),
+        axis.text.x = element_text( vjust=0.5, size = 10, family = "Serif"),
+        axis.text.y = element_text( size = 10, family = "Serif"),
         axis.title.x = element_text(family = "Serif"),
-        axis.title.y = element_text(family = "Serif")) # tweak the plot's appearance and legend position
+        axis.title.y = element_text(family = "Serif"))
 
+arrow_up <- data.frame(x1 = 14.1, x2 = 7.8, y1 = 11.05, y2 = 16.91)
+arrow_down <- data.frame(x1 = 14.1, x2 = 7.8, y1 = 9.67,  y2 =  3.12 )
+
+
+fig_tide_locs <- ggplot() +
+  coord_equal(xlim = c(0, 28), ylim = c(0, 20), expand = FALSE) +
+  annotation_custom(ggplotGrob(bigger_map), xmin = 8, xmax = 28, ymin = 0, 
+                    ymax = 20) +
+  annotation_custom(ggplotGrob(smaller_map), xmin = 0, xmax = 8, ymin = 0, 
+                    ymax = 19) +
+  geom_segment(aes(x = x1, y = y1, xend = x2, yend = y2), data = arrow_up, 
+               lineend = "round") +
+  geom_segment(aes(x = x1, y = y1, xend = x2, yend = y2), data = arrow_down, 
+               lineend = "round") +
+  scale_x_continuous(breaks = seq(1,28,1)) +
+  scale_y_continuous(breaks = seq(1,20,1)) +
+  theme_void()
 
 
 # ================ Calculating MLW - MHW for ARKLOW and HOWTH =================== 
@@ -115,11 +160,12 @@ dublin_monthly <- dub_mon %>%
   mutate(Dublin_mhw = mhw -  mean(mhw, na.rm = T), 
          Dublin_mlw = mlw - mean(mlw, na.rm = T),
          Dublin_msl = msl - mean(msl, na.rm = T)) %>% 
-  select(time, Dublin_mlw, Dublin_msl, Dublin_mhw)
+  select(time, dyear,Dublin_mlw, Dublin_msl, Dublin_mhw)
 
 
 # ========================  Combining monthly recordings of DUB-ARK-HOW ======================== 
-dub_how_ark_monthly <- full_join(dublin_monthly, arklow_monthly) %>% 
+dub_how_ark_monthly <- dublin_monthly %>% select(-dyear) %>% 
+                          full_join(., arklow_monthly) %>% 
                           left_join(.,howth_monthly) %>% 
                           pivot_longer(names_to = "Location",
                                        values_to = "Meter",
@@ -139,15 +185,14 @@ p1 <- dub_how_ark_monthly %>% filter(Location == "Dublin_mlw" |
               color = "blue", method = lm, se = F) +
   geom_smooth(data = howth_monthly, aes(y = Howth_mlw, x = time), alpha = 0.1,
               color = "red", method = lm, se = F) + 
-  labs(x = "Time", y = "Mean Low Water (m)") +
+  labs(x = "Time", y = "") +
   scale_color_manual(values = c("#A01502","#02509E"), name = "", labels = c("Howth Harbor","Dublin Port")) +
   scale_x_date(breaks = "1 years", date_labels = "%Y") +
   theme_bw() +
-  guides(colour = guide_legend(override.aes = list(alpha = .0001))) +
   theme(
     axis.text.x = element_text(size = 10, face = "bold", margin = margin(t = 6)),
     axis.text.y = element_text(size = 10, face = "bold", margin = margin(t = 6)),
-    legend.text = element_text(family = "Serif",size = 10, face = "bold", color = "white"),
+    legend.text = element_text(family = "Serif",size = 10, face = "bold"),
     legend.title = element_text(size = 15, face = "bold"),
     legend.spacing.x = unit(1,"cm"),
     axis.title.y = element_text(family = "Serif",size = 10, face = "bold"),
@@ -165,7 +210,7 @@ p2 <- dub_how_ark_monthly %>% filter(Location == "Dublin_msl" |
               color = "blue", method = lm, se = F) +
   geom_smooth(data = howth_monthly, aes(y = Howth_msl, x = time), 
               color = "red", method = lm, se = F) + 
-  labs(x = "", y = "Mean Sea Level (m)") +
+  labs(x = "", y = "") +
   scale_color_manual(values = c("#A01502","#02509E"), name = "", labels = c("Howth Harbor","Dublin Port")) +
   scale_x_date(breaks = "1 years", date_labels = "%Y") +
   theme_bw() +
@@ -189,22 +234,22 @@ p3 <- dub_how_ark_monthly %>% filter(Location == "Dublin_mhw" |
               color = "blue", method = lm, se = F) +
   geom_smooth(data = howth_monthly, aes(y = Howth_mhw, x = time), 
               color = "red", method = lm, se = F) + 
-  labs(x = "", y = "Mean High Water (m)") +
+  labs(x = "", y = "") +
   scale_color_manual(values = c("#A01502","#02509E"), name = "", labels = c("Howth Harbor","Dublin Port")) +
   scale_x_date(breaks = "1 years", date_labels = "%Y") +
   theme_bw() +
-  guides(colour = guide_legend(override.aes = list(alpha = .0001))) +
   theme(
     axis.text.x = element_text(size = 10, face = "bold", margin = margin(t = 6)),
     axis.text.y = element_text(size = 10, face = "bold", margin = margin(t = 6)),
-    legend.text = element_text(family = "Serif",size = 10, face = "bold", color = "white"),
+    legend.text = element_text(family = "Serif",size = 10, face = "bold"),
     legend.title = element_text(size = 15, face = "bold"),
     legend.box.margin = margin(1, 20, 1, 1),
     axis.title.y = element_text(family = "Serif",size = 10, face = "bold"),
     axis.title.x = element_text(family = "Serif",size = 10, face = "bold"))
 
 fig_dub_howth <- ggarrange(p3 + rremove("x.text"), p2 + rremove("x.text"), p1 , 
-          ncol = 1, nrow = 3)
+          ncol = 1, nrow = 3,
+          common.legend = TRUE, legend = "top")
 
 # ======================== Plotting Dublin VS Arklow ======================== 
 # ======================== MLW
@@ -221,11 +266,10 @@ p1 <- dub_how_ark_monthly %>% filter(Location == "Dublin_mlw" |
   scale_color_manual(values = c("#A01502","#02509E"), name = "", labels = c("Arklow","Dublin Port")) +
   scale_x_date(breaks = "1 years", date_labels = "%Y") +
   theme_bw() +
-  guides(colour = guide_legend(override.aes = list(alpha = .0001))) +
   theme(
     axis.text.x = element_text(size = 10, face = "bold", margin = margin(t = 6)),
     axis.text.y = element_text(size = 10, face = "bold", margin = margin(t = 6)),
-    legend.text = element_text(family = "Serif",size = 10, face = "bold", color = "white"),
+    legend.text = element_text(family = "Serif",size = 10, face = "bold"),
     legend.title = element_text(size = 15, face = "bold"),
     legend.spacing.x = unit(1,"cm"),
     axis.title.y = element_text(family = "Serif",size = 10, face = "bold"),
@@ -269,11 +313,10 @@ p3 <- dub_how_ark_monthly %>% filter(Location == "Dublin_mhw" |
   scale_color_manual(values = c("#A01502","#02509E"), name = "", labels = c("Arklow","Dublin Port")) +
   scale_x_date(breaks = "1 years", date_labels = "%Y") +
   theme_bw() +
-  guides(colour = guide_legend(override.aes = list(alpha = .0001))) +
   theme(
     axis.text.x = element_text(size = 10, face = "bold", margin = margin(t = 6)),
     axis.text.y = element_text(size = 10, face = "bold", margin = margin(t = 6)),
-    legend.text = element_text(family = "Serif",size = 10, face = "bold", color = "white"),
+    legend.text = element_text(family = "Serif",size = 10, face = "bold"),
     legend.title = element_text(size = 15, face = "bold"),
     legend.box.margin = margin(1, 20, 1, 1),
     axis.title.y = element_text(family = "Serif",size = 10, face = "bold"),
@@ -282,6 +325,80 @@ p3 <- dub_how_ark_monthly %>% filter(Location == "Dublin_mhw" |
 fig_dub_ark <- ggarrange(p3 + rremove("x.text"), p2 + rremove("x.text"), p1 , 
                                ncol = 1, nrow = 3,
                          common.legend = TRUE, legend = "top")
+
+
+fig_dub_ark_howth <- ggarrange(fig_dub_ark + rremove("x.text"), fig_dub_howth + rremove("x.text"), 
+          ncol = 2, nrow = 1)
+
+#annotate_figure(test, bottom = text_grob("Time", family = "Serif", size = 10, face = "bold"))
+# ================ Calculating rate differences among Dublin-Howth-Arklow (DHA) ==============
+df_for_rates_DHA <- full_join(dublin_monthly, arklow_monthly) %>% 
+               left_join(.,howth_monthly) %>% 
+               select(-time) %>% 
+               pivot_longer(names_to = "Location",
+               values_to = "Meter",
+               -dyear)
+
+
+# ======================== Howth vs Dublin: MLW rate
+df_HD_mlw <- df_for_rates_DHA %>% 
+  filter(dyear > 2006.950, 
+         Location == "Dublin_mlw" | Location == "Howth_mlw") %>% 
+         mutate(Meter = Meter * 1000,
+                siteDublin = ifelse(Location == "Dublin_mlw", 1,0))
+                      
+lm.mlw.HD <- lm(Meter ~ dyear + siteDublin + dyear*siteDublin, data = df_HD_mlw)
+HD_rdiff_mlw <- round(unname(lm.mlw.HD$coefficients[4]),2)
+
+# ======================== Howth vs Dublin: MSL rate
+df_HD_msl <- df_for_rates_DHA %>% 
+  filter(dyear > 2006.950, 
+         Location == "Dublin_msl" | Location == "Howth_msl") %>% 
+  mutate(Meter = Meter * 1000,
+         siteDublin = ifelse(Location == "Dublin_msl", 1,0))
+
+lm.msl.HD <- lm(Meter ~ dyear + siteDublin + dyear*siteDublin, data = df_HD_msl)
+HD_rdiff_msl <- round(unname(lm.msl.HD$coefficients[4]),2)
+
+# ======================== Howth vs Dublin: MHW rate
+df_HD_mhw <- df_for_rates_DHA %>% 
+  filter(dyear > 2006.950, 
+         Location == "Dublin_mhw" | Location == "Howth_mhw") %>% 
+  mutate(Meter = Meter * 1000,
+         siteDublin = ifelse(Location == "Dublin_mhw", 1,0))
+
+lm.mhw.HD <- lm(Meter ~ dyear + siteDublin + dyear*siteDublin, data = df_HD_mhw)
+HD_rdiff_mhw <- round(unname(lm.mhw.HD$coefficients[4]),2)
+
+
+
+# ======================== Arklow vs Dublin: MLW rate
+df_AD_mlw <- df_for_rates_DHA %>% 
+  filter(Location == "Dublin_mlw" | Location == "Arklow_mlw") %>% 
+  mutate(Meter = Meter * 1000,
+         siteDublin = ifelse(Location == "Dublin_mlw", 1,0))
+
+lm.mlw.AD <- lm(Meter ~ dyear + siteDublin + dyear*siteDublin, data = df_AD_mlw)
+AD_rdiff_mlw <- round(unname(lm.mlw.AD$coefficients[4]),2)
+
+# ======================== Arklow vs Dublin: MSL rate
+df_AD_msl <- df_for_rates_DHA %>% 
+  filter(Location == "Dublin_msl" | Location == "Arklow_msl") %>% 
+  mutate(Meter = Meter * 1000,
+         siteDublin = ifelse(Location == "Dublin_msl", 1,0))
+
+lm.msl.AD <- lm(Meter ~ dyear + siteDublin + dyear*siteDublin, data = df_AD_msl)
+AD_rdiff_msl <- round(unname(lm.msl.AD$coefficients[4]),2)
+
+# ======================== Arklow vs Dublin: MHW rate
+df_AD_mhw <- df_for_rates_DHA %>% 
+  filter(Location == "Dublin_mhw" | Location == "Arklow_mhw") %>% 
+  mutate(Meter = Meter * 1000,
+         siteDublin = ifelse(Location == "Dublin_mhw", 1,0))
+
+lm.mhw.AD <- lm(Meter ~ dyear + siteDublin + dyear*siteDublin, data = df_AD_mhw)
+AD_rdiff_mhw <- round(unname(lm.mhw.AD$coefficients[4]),2)
+
 
 # ================ Calculating MLW - MHW for Brest and Newlyn =================== 
 # ======================== Brest
@@ -360,7 +477,8 @@ fig_dub_bre_new <- dub_new_bre_yearly %>% select(year, newlyn_msl, brest_msl, du
 # ================ Predicting Dublin MSL from MLW in JAGS =================== 
 df_jags <- dub_ann %>% filter(year < 2017) %>% 
   mutate(mtl = replace(mtl, year > 1977, NA),
-         mlw = na_interpolation(mlw))
+         mlw = na_interpolation(mlw)) %>% 
+  mutate(mtl = mtl - 2.549)
  
 
 model_code <- "
@@ -431,19 +549,6 @@ df_y <- df_y_wide %>% mutate(time = df_jags$year) %>% pivot_longer(names_to = "i
 
 mu_mean <- data.frame(pred = model_run$BUGSoutput$mean$mu, year = df_jags$year)
 
-ggplot() +
-  geom_line(data = df_y, aes(x = time, y = response, 
-            group = index, linetype = "Posterior Predictive"),
-            size = 1/4, alpha = 1/4) +
-  geom_line(data = dub_ann, aes(year, mtl, linetype = "Observed"), color = "red", size = 1) + 
-  geom_line(data = mu_mean, aes(year, pred, linetype = "Predicted"), color = "blue", size = 1) + 
-  scale_x_continuous(breaks = seq(min(df_y$time), max(df_y$time), 5)) +
-  scale_linetype_manual(name = "Legend", values = c(1,1,1), 
-                        guide = guide_legend(override.aes = 
-                                               list(color = c("red", "black", "blue"),
-                                                    linetype = c("solid", "solid","solid")))) +
-  labs(y = "MTL", x = "Time") 
-
 
 # ================ Plotting Dublin's new MSL & Howth and Arklow =================== 
 howth_yearly <- howth_harbour %>% 
@@ -457,7 +562,6 @@ howth_yearly <- howth_harbour %>%
   group_by(time = year(time)) %>% # Group by year
   mutate(msl = mean(msl, na.rm = T)) %>% 
   select(time, msl) %>% 
-  mutate(msl = msl + 2.549) %>% 
   filter(time > 2006 & time < 2017)
 
 arklow_yearly <- arklow %>% 
@@ -471,14 +575,16 @@ arklow_yearly <- arklow %>%
   group_by(time = year(time)) %>% # Group by year
   summarise(msl = mean(msl, na.rm = T)) %>% 
   select(time, msl) %>% 
-  mutate(msl = msl + 2.549) %>% 
   filter(time > 2003 & time < 2017)
+
+dub_ann_old <- dub_ann %>% mutate(mtl = mtl - 2.549)
+
 
 fig_newdub_ark_how <- ggplot() +
   geom_line(data = df_y, aes(x = time, y = response, 
                              group = index, linetype = "Model uncertainty "),color = "#004D95",
             size = 1/4, alpha = 1/4) +
-  geom_line(data = dub_ann, aes(year, mtl, linetype = "Dublin port's old"), color = "red", size = 1) + 
+  geom_line(data = dub_ann_old, aes(year, mtl, linetype = "Dublin port's old"), color = "red", size = 1) + 
   geom_line(data = mu_mean, aes(year, pred, linetype = "Dublin port's new"), color = "blue", size = 1) +
   geom_line(data = howth_yearly, aes( time, msl, linetype = "Howth"), color = "yellow", size = 1) +
   geom_line(data = arklow_yearly, aes(time, msl, linetype = "Arklow"), color = "#61FA57", size = 1) +
@@ -623,13 +729,13 @@ fig_dub_withoutATMO <- ggplot() +
 # ========= Extracting New Dublin data uncertainty after ===================
 # ========= removing atmospheric effects(Epistemic + Aleatory) ============= 
 
-newdata_variance <- df_y_corrected %>% #To be counted in for atmospheric removal model uncertainty
+newdata_variance <- df_y_corrected %>% #To be counted for atmospheric removal model uncertainty
   group_by(year = time) %>% 
   summarise(std = sd(response))
 
 # ========= Estimating Dublin's SLR rate and measure its uncertainity ===================
 mu_mean_corrected_for_rate <- mu_mean_corrected %>% 
-  filter(year > 1952) %>% left_join(.,newdata_variance)
+  filter(year > 1996) %>% left_join(.,newdata_variance)
                                   
 model_code <- "
  model
@@ -694,7 +800,7 @@ lm.fit <- lm(corrected_dub_new_brest$brest_msl ~ corrected_dub_new_brest$brest_u
 corrected_dub_new_brest$brest_corrected <- c(NA,NA,NA,NA, lm.fit$residuals)
 corrected_dub_new_brest$dublin_corrected <- mu_mean_corrected$pred_correct
 
-corrected_new_brest_for_rate <- corrected_dub_new_brest %>% filter(year > 1952)
+corrected_new_brest_for_rate <- corrected_dub_new_brest %>% filter(year > 1996)
 
 # ========= Brest
 model_code <- "
@@ -789,3 +895,24 @@ slr_rate <- model_run$BUGSoutput$sims.list$beta_1 * 1000 #convert to millimeter
 newlyn_rate <- quantile(slr_rate, probs = c(0.05,.5,.95))
 
 rates <- rbind(`Dublin port` = dublin_rate, Newlyn = newlyn_rate, Brest = brest_rate)
+
+# ========= Plotting Corrected Dublin VS Brest VS Newlyn ===================
+
+fig_corrected_DBN <- corrected_dub_new_brest %>% select(year, newlyn_corrected, brest_corrected, dublin_corrected) %>% 
+  pivot_longer(names_to = "Location",
+               values_to = "msl",
+               -year) %>% 
+  ggplot() + 
+  geom_line(aes(year, msl, color = Location), size = 1) +
+  labs(x = "Time", y = "Mean Sea Level (m)") +
+  scale_color_manual(values = c("#A01502","#02509E", "#fbc200"), name = "", labels = c("Brest","Dublin Port", "Newlyn")) +
+  scale_x_continuous(breaks = seq(min(corrected_dub_new_brest$year), max(corrected_dub_new_brest$year),7)) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(size = 10, face = "bold", margin = margin(t = 6)),
+    axis.text.y = element_text(size = 10, face = "bold", margin = margin(t = 6)),
+    legend.text = element_text( family = "Serif",size = 10, face = "bold"),
+    legend.title = element_text(size = 15, face = "bold"),
+    legend.box.margin = margin(1, 20, 1, 1),
+    axis.title.y = element_text(family = "Serif",size = 10, face = "bold"),
+    axis.title.x = element_text(family = "Serif",size = 10, face = "bold")) 
